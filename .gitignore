@@ -9,7 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-data/*
+*.jpg
+*.xml
 .env
 ml/model/*
 volumes
