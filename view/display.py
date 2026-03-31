@@ -5,6 +5,8 @@ import streamlit as st
 from interface import detect_faces
 from PIL import Image
 
+# TODO: Refactor -> nettoyer le fichier
+
 # Configuration de la page
 st.set_page_config(page_title="Annotateur de Visages", layout="wide")
 
