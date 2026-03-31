@@ -91,6 +91,18 @@ Pour mettre à jour l'image sur le GitHub Container Registry :
 
 ---
 
+## 🌐 Accès à l'Application
+Une fois le conteneur lancé (via Docker ou `make run-debug`), l'interface Streamlit est accessible à l'adresse suivante :
+
+👉 **URL :** [http://localhost:8501](http://localhost:8501)
+
+---
+
+## 🔑 Accès à l'Image de "Release" (GitHub Packages)
+L'image officielle du projet est stockée sur le **GitHub Container Registry (GHCR)**. Pour l'utiliser, un accès en lecture est nécessaire.
+
+---
+
 ## 💡 Notes techniques
 * **OpenCV** : Le projet utilise `haarcascade_frontalface_default.xml` pour la détection. Il est stocké dans `./data/`.
 * **Variables d'environnement** : Le fichier `.env` définit `OUTPUT_IMAGES_DIR`. Assure-toi qu'il correspond à ton montage de volume Docker si tu modifies la structure.

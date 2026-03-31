@@ -1,4 +1,5 @@
 FROM python:3.12-slim
+LABEL org.opencontainers.image.source=https://github.com/Lukombo-JDS/face-detect-laforge
 
 # 1. Dépendances système (Regroupées pour limiter les layers)
 RUN apt-get update && apt-get install -y \
