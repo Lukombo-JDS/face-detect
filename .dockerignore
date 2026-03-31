@@ -1,4 +1,4 @@
-# Exclure l'environnement virtuel local (le plus lourd !)
+# Exclure l'environnement virtuel local
 .venv/
 venv/
 env/
