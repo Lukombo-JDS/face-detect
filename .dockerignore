@@ -1,0 +1,23 @@
+# Exclure l'environnement virtuel local (le plus lourd !)
+.venv/
+venv/
+env/
+activate/
+
+# Exclure les caches Python
+**/__pycache__/
+**/*.py[cod]
+
+# Exclure les données volumineuses et images de test
+data/images/*
+!data/images/.gitkeep
+volumes/
+ml/model/*
+
+# Exclure les dossiers de configuration IDE et Git
+.git/
+.vscode/
+.idea/
+
+# Exclure les fichiers de log
+*.log

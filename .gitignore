@@ -5,8 +5,8 @@ build/
 dist/
 wheels/
 *.egg-info
-
 # Virtual environments
+activate
 .venv
 
 *.jpg

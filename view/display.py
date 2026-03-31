@@ -1,14 +1,9 @@
-import io
-import os
 import time
 
-import cv2
 import dotenv
-import numpy as np
 import streamlit as st
-from PIL import Image
-
 from interface import detect_faces
+from PIL import Image
 
 # Configuration de la page
 st.set_page_config(page_title="Annotateur de Visages", layout="wide")
