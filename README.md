@@ -26,17 +26,13 @@ view/
 make all
 ```
 
-2. Lancer Milvus:
+2. Lancer toute la stack (app + Milvus):
 
 ```bash
-make db-up
+make app-up
 ```
 
-3. Lancer Streamlit:
-
-```bash
-make run-debug
-```
+Cette commande démarre automatiquement `etcd`, `minio`, `standalone` (Milvus) puis l'application Streamlit avec `MILVUS_HOST=standalone`.
 
 ## Fonctionnement
 
