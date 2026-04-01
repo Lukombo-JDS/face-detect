@@ -15,7 +15,7 @@ DOCKER_COMPOSE = docker compose
 COMPOSE_APP = docker-compose.yml
 COMPOSE_DB = db/docker-compose.yml
 
-.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help check-docker docker-build docker-smoke build-and-push
+.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help check-docker docker-build docker-smoke build-and-push release-image
 
 all: init env venv download ## Configuration complète (dossiers + env + venv + download)
 
@@ -97,7 +97,10 @@ docker-smoke: check-docker ## Démarre le container et vérifie que Streamlit r�
 	docker rm -f $$container_name >/dev/null 2>&1 || true; \
 	exit 1
 
-build-and-push: docker-build ## Build avec le tag distant et pousse sur GitHub
+build-and-push: docker-build docker-smoke ## Build, smoke test puis push sur GitHub
+	docker push $(IMAGE_TAG)
+
+release-image: docker-build docker-smoke ## Alias: build + smoke + push
 	docker push $(IMAGE_TAG)
 
 deploy-from-registry: ## Lance le projet en utilisant l'image du registre
