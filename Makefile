@@ -11,7 +11,9 @@ ENV_FILE = .env
 GITHUB_USER = lukombo-jds
 REPO_NAME = face-detect-laforge
 VERSION_BASE ?= v.0.0.1
-IMAGE_ID ?= unstable-$(shell date +%Y%m%d%H%M%S)
+ifeq ($(origin IMAGE_ID), undefined)
+IMAGE_ID := unstable-$(shell date +%Y%m%d%H%M%S)
+endif
 IMAGE_VERSION ?= $(VERSION_BASE)-$(IMAGE_ID)
 IMAGE_TAG = ghcr.io/$(GITHUB_USER)/$(REPO_NAME):$(IMAGE_VERSION)
 IMAGE_TAG_LATEST = ghcr.io/$(GITHUB_USER)/$(REPO_NAME):latest
