@@ -32,16 +32,41 @@ class FacePipelineService:
         self.detector = detector or FaceDetector()
         self.embedder = embedder or FaceEmbedder()
         self.store = store or MilvusFaceStore()
-        self.store.connect()
+        self._milvus_available = False
+        self._milvus_error: str | None = None
         self._new_faces_since_rebuild = 0
+
+    @property
+    def milvus_available(self) -> bool:
+        return self._milvus_available
+
+    @property
+    def milvus_error(self) -> str | None:
+        return self._milvus_error
+
+    def ensure_milvus_connection(self) -> bool:
+        if self._milvus_available:
+            return True
+        try:
+            self.store.connect()
+        except Exception as exc:
+            self._milvus_available = False
+            self._milvus_error = str(exc)
+            LOGGER.warning("milvus_unavailable error=%s", exc)
+            return False
+        self._milvus_available = True
+        self._milvus_error = None
+        LOGGER.info("milvus_connected")
+        return True
 
     def process_uploaded_image(self, image_bytes: bytes) -> list[ProcessedFace]:
         image = self.detector.load_image_from_bytes(image_bytes)
         detected = self.detector.detect(image)
+        similarity_enabled = self.ensure_milvus_connection()
         faces: list[ProcessedFace] = []
         for item in detected:
             embedding = self.embedder.embed_bgr_face(item.image)
-            suggestions = self.store.search(embedding, limit=3)
+            suggestions = self.store.search(embedding, limit=3) if similarity_enabled else []
             faces.append(
                 ProcessedFace(
                     face_image=item.image,
@@ -58,6 +83,12 @@ class FacePipelineService:
         annotations: dict[int, str],
         source_image: str,
     ) -> None:
+        if not self.ensure_milvus_connection():
+            LOGGER.warning(
+                "save_annotations_skipped reason=milvus_unavailable faces=%s",
+                len(processed_faces),
+            )
+            return
         for idx, face in enumerate(processed_faces):
             label = normalize_label(annotations.get(idx, ""))
             self.store.add_face(label, face.embedding, source_image=source_image)
