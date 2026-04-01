@@ -75,3 +75,18 @@ uv run python scripts/rebuild_index.py --folder data/images/faces --label Alice
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Docker (build, smoke test, push)
+
+Le projet expose des commandes Make dédiées :
+
+```bash
+# Build de l'image taggée pour GHCR
+make docker-build
+
+# Vérifie que le container démarre et répond sur l'endpoint health Streamlit
+make docker-smoke
+
+# Push dans le registre configuré (IMAGE_TAG dans le Makefile)
+make build-and-push
+```

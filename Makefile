@@ -15,7 +15,7 @@ DOCKER_COMPOSE = docker compose
 COMPOSE_APP = docker-compose.yml
 COMPOSE_DB = db/docker-compose.yml
 
-.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help
+.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help check-docker docker-build docker-smoke build-and-push
 
 all: init env venv download ## Configuration complète (dossiers + env + venv + download)
 
@@ -67,8 +67,37 @@ clr-all-img: ## Supprime toutes les images (faces et raw)
 
 ## --- DOCKER ---
 
-build-and-push: ## Build avec le tag distant et pousse sur GitHub
+check-docker: ## Vérifie que Docker CLI est disponible
+	@command -v docker >/dev/null 2>&1 || { \
+		echo "Docker CLI introuvable. Installe Docker (ou active le binaire docker) puis réessaie."; \
+		exit 1; \
+	}
+
+docker-build: check-docker ## Build l'image locale avec le tag du registre
 	docker build -t $(IMAGE_TAG) -f Dockerfile .
+
+docker-smoke: check-docker ## Démarre le container et vérifie que Streamlit répond sur /_stcore/health
+	@set -e; \
+	container_name="face-detect-smoke"; \
+	echo "Suppression éventuelle du container $$container_name..."; \
+	docker rm -f $$container_name >/dev/null 2>&1 || true; \
+	echo "Démarrage du container $$container_name..."; \
+	docker run -d --name $$container_name -p 8501:8501 $(IMAGE_TAG) >/dev/null; \
+	echo "Attente du service Streamlit..."; \
+	for i in $$(seq 1 20); do \
+		if curl -sf http://127.0.0.1:8501/_stcore/health >/dev/null; then \
+			echo "Smoke test OK: le container répond."; \
+			docker rm -f $$container_name >/dev/null; \
+			exit 0; \
+		fi; \
+		sleep 2; \
+	done; \
+	echo "Smoke test KO: le container ne répond pas à temps."; \
+	docker logs $$container_name || true; \
+	docker rm -f $$container_name >/dev/null 2>&1 || true; \
+	exit 1
+
+build-and-push: docker-build ## Build avec le tag distant et pousse sur GitHub
 	docker push $(IMAGE_TAG)
 
 deploy-from-registry: ## Lance le projet en utilisant l'image du registre
