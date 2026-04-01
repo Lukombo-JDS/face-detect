@@ -27,7 +27,11 @@ class MilvusFaceStore:
     def connect(self) -> None:
         if self._connected:
             return
-        connections.connect(host=SETTINGS.milvus_host, port=SETTINGS.milvus_port)
+        connections.connect(
+            host=SETTINGS.milvus_host,
+            port=SETTINGS.milvus_port,
+            timeout=1,
+        )
         self._connected = True
         self._collection = self._ensure_collection()
 

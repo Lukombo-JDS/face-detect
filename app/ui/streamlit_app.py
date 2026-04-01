@@ -86,6 +86,13 @@ def _save_and_reset() -> None:
 
 
 def _render_upload_tab() -> None:
+    if not st.session_state.pipeline.ensure_milvus_connection():
+        error = st.session_state.pipeline.milvus_error or "connexion impossible"
+        st.warning(
+            "Milvus indisponible: suggestions de similarité et indexation désactivées "
+            f"(détail: {error})."
+        )
+
     uploaded_file = st.file_uploader("Choisir une image…", type=["jpg", "jpeg", "png"])
     _poll_processing_task()
 
@@ -108,12 +115,18 @@ def _render_gallery_tab() -> None:
 
 def _render_annotation_view() -> None:
     st.subheader("Annotation")
+    similarity_enabled = st.session_state.pipeline.milvus_available
+    if not similarity_enabled:
+        st.info("Mode dégradé actif: suggestions Milvus et indexation désactivées.")
     for idx, processed in enumerate(st.session_state.processed_faces):
         st.image(processed.face_image, channels="BGR", width=180)
-        suggestions = ", ".join(
-            [f"{x.person_name} ({x.distance:.2f})" for x in processed.suggestions]
-        )
-        st.caption(f"Suggestions Milvus: {suggestions or 'aucune'}")
+        if similarity_enabled:
+            suggestions = ", ".join(
+                [f"{x.person_name} ({x.distance:.2f})" for x in processed.suggestions]
+            )
+            st.caption(f"Suggestions Milvus: {suggestions or 'aucune'}")
+        else:
+            st.caption("Suggestions Milvus: indisponibles (Milvus non connecté)")
         st.session_state.annotations[idx] = st.text_input(
             f"Label visage #{idx + 1}",
             value=st.session_state.annotations.get(idx, ""),
