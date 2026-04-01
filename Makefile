@@ -15,11 +15,13 @@ IMAGE_ID ?= unstable-$(shell date +%Y%m%d%H%M%S)
 IMAGE_VERSION ?= $(VERSION_BASE)-$(IMAGE_ID)
 IMAGE_TAG = ghcr.io/$(GITHUB_USER)/$(REPO_NAME):$(IMAGE_VERSION)
 IMAGE_TAG_LATEST = ghcr.io/$(GITHUB_USER)/$(REPO_NAME):latest
+BUILD_PLATFORMS = linux/amd64,linux/arm64
+BUILDX_BUILDER ?= multiarch-builder
 DOCKER_COMPOSE = docker compose
 COMPOSE_APP = docker-compose.yml
 COMPOSE_DB = db/docker-compose.yml
 
-.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help check-docker docker-build docker-smoke build-and-push release-image release-unstable release-stable show-image-tag
+.PHONY: all venv download docker-up docker-down init env clr-all-img run-debug help check-docker check-buildx docker-build docker-smoke docker-push-multi docker-push-multi-stable build-and-push release-image release-unstable release-stable show-image-tag
 
 all: init env venv download ## Configuration complète (dossiers + env + venv + download)
 
@@ -77,6 +79,15 @@ check-docker: ## Vérifie que Docker CLI est disponible
 		exit 1; \
 	}
 
+check-buildx: check-docker ## Vérifie Docker Buildx et prépare un builder multi-arch
+	@docker buildx version >/dev/null 2>&1 || { \
+		echo "Docker Buildx introuvable. Mets Docker à jour puis réessaie."; \
+		exit 1; \
+	}
+	@docker buildx inspect $(BUILDX_BUILDER) >/dev/null 2>&1 || docker buildx create --name $(BUILDX_BUILDER) --driver docker-container --use >/dev/null
+	@docker buildx use $(BUILDX_BUILDER)
+	@docker buildx inspect --bootstrap >/dev/null
+
 docker-build: check-docker ## Build l'image locale avec le tag du registre
 	@echo "Build image tag: $(IMAGE_TAG)"
 	docker build -t $(IMAGE_TAG) -f Dockerfile .
@@ -102,19 +113,23 @@ docker-smoke: check-docker ## Démarre le container et vérifie que Streamlit r�
 	docker rm -f $$container_name >/dev/null 2>&1 || true; \
 	exit 1
 
-build-and-push: docker-build docker-smoke ## Build, smoke test puis push sur GitHub
-	docker push $(IMAGE_TAG)
+docker-push-multi: check-buildx ## Push multi-arch (linux/amd64 + linux/arm64) pour le tag versionné
+	docker buildx build --platform $(BUILD_PLATFORMS) -t $(IMAGE_TAG) -f Dockerfile --push .
 
-release-image: docker-build docker-smoke ## Alias: build + smoke + push
-	docker push $(IMAGE_TAG)
+docker-push-multi-stable: check-buildx ## Push multi-arch pour le tag versionné et latest
+	docker buildx build --platform $(BUILD_PLATFORMS) -t $(IMAGE_TAG) -t $(IMAGE_TAG_LATEST) -f Dockerfile --push .
 
-release-unstable: docker-build docker-smoke ## Build + smoke + push avec tag versionné (instable)
-	docker push $(IMAGE_TAG)
+build-and-push: docker-build docker-smoke docker-push-multi ## Build, smoke test puis push multi-arch
+	@true
 
-release-stable: docker-build docker-smoke ## Build + smoke + push versionné + latest (stable)
-	docker tag $(IMAGE_TAG) $(IMAGE_TAG_LATEST)
-	docker push $(IMAGE_TAG)
-	docker push $(IMAGE_TAG_LATEST)
+release-image: docker-build docker-smoke docker-push-multi ## Alias: build + smoke + push multi-arch
+	@true
+
+release-unstable: docker-build docker-smoke docker-push-multi ## Build + smoke + push multi-arch avec tag versionné (instable)
+	@true
+
+release-stable: docker-build docker-smoke docker-push-multi-stable ## Build + smoke + push multi-arch versionné + latest (stable)
+	@true
 
 show-image-tag: ## Affiche le tag d'image calculé
 	@echo "$(IMAGE_TAG)"
