@@ -1,4 +1,4 @@
-# Face Detect Laforge
+# Face Detect
 
 Application Streamlit d’annotation et de recherche de visages avec stockage vectoriel Milvus.
 
